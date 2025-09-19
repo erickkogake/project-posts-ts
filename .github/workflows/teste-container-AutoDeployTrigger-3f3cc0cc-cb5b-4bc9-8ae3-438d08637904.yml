@@ -1,0 +1,49 @@
+name: Trigger auto deployment for teste-container
+
+# When this action will be executed
+on:
+  # Automatically trigger it when detected changes in repo
+  push:
+    branches: 
+      [ main ]
+    paths:
+    - '**'
+    - '.github/workflows/teste-container-AutoDeployTrigger-3f3cc0cc-cb5b-4bc9-8ae3-438d08637904.yml'
+
+  # Allow manual trigger 
+  workflow_dispatch:      
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions: 
+      id-token: write #This is required for requesting the OIDC JWT Token
+      contents: read #Required when GH token is used to authenticate with private repo
+
+    steps:
+      - name: Checkout to the branch
+        uses: actions/checkout@v2
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.TESTECONTAINER_AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.TESTECONTAINER_AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.TESTECONTAINER_AZURE_SUBSCRIPTION_ID }}
+
+      - name: Build and push container image to registry
+        uses: azure/container-apps-deploy-action@v2
+        with:
+          appSourcePath: ${{ github.workspace }}
+          _dockerfilePathKey_: _dockerfilePath_
+          _targetLabelKey_: _targetLabel_
+          registryUrl: testeerickkogake.azurecr.io
+          registryUsername: ${{ secrets.TESTECONTAINER_REGISTRY_USERNAME }}
+          registryPassword: ${{ secrets.TESTECONTAINER_REGISTRY_PASSWORD }}
+          containerAppName: teste-container
+          resourceGroup: rg-clicketeste-brasil
+          imageToBuild: testeerickkogake.azurecr.io/teste-container:${{ github.sha }}
+          _buildArgumentsKey_: |
+            _buildArgumentsValues_
+
+
